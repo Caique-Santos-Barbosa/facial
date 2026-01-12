@@ -1,0 +1,76 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+.next/
+out/
+.nuxt/
+.cache/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads
+uploads/
+*.jpg
+*.jpeg
+*.png
+
+# Database
+*.db
+*.sqlite
+
+# Docker
+.dockerignore
+
+# Gradle (não deve estar no projeto, mas por segurança)
+.gradle/
+gradle/
+
+# Arquivos do sistema Windows
+*.dat
+*.LOG*
+*.blf
+*.regtrans-ms
+*.ini
+NTUSER.*
+AppData/
+Contacts/
+Downloads/
+Favorites/
+Links/
+Music/
+Videos/
+Saved Games/
+Searches/
+Desktop/
+Documents/

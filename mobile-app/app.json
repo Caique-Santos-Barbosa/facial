@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "HDT Face Recognition",
+    "slug": "hdt-face-recognition",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1e293b"
+    },
+    "plugins": [
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "$(PRODUCT_NAME) precisa acessar sua câmera para reconhecimento facial.",
+          "enableMicrophonePermission": false
+        }
+      ]
+    ],
+    "android": {
+      "package": "com.hdtenergy.facerecognition",
+      "versionCode": 1,
+      "permissions": ["CAMERA"],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1e293b"
+      }
+    }
+  }
+}
+
