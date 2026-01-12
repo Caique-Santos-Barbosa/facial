@@ -9,7 +9,6 @@ RUN apt-get update && apt-get install -y \
     libx11-dev \
     libblas-dev \
     liblapack-dev \
-    libatlas-base-dev \
     gfortran \
     wget \
     git \
