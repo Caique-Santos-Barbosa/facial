@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import datetime, timedelta
 from app.database import get_db
@@ -24,7 +24,7 @@ def get_access_logs(
     """
     Lista logs de acesso com filtros
     """
-    query = db.query(AccessLog)
+    query = db.query(AccessLog).options(joinedload(AccessLog.employee))
     
     if employee_id:
         query = query.filter(AccessLog.employee_id == employee_id)

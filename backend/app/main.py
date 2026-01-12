@@ -1,7 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.config import settings
+from app.database import engine, Base
 from app.api.endpoints import auth, employees, recognition, access_control
+import os
+
+# Cria tabelas
+Base.metadata.create_all(bind=engine)
+
+# Cria diretórios necessários
+os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+os.makedirs(settings.FACES_DIR, exist_ok=True)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -17,6 +27,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Static files
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Routers
 app.include_router(
@@ -44,14 +57,14 @@ app.include_router(
 )
 
 @app.get("/")
-def root():
+def read_root():
     return {
-        "message": "HDT Energy - Sistema de Reconhecimento Facial API",
+        "message": "HDT Energy - Sistema de Reconhecimento Facial",
         "version": settings.VERSION,
-        "docs": f"{settings.API_V1_STR}/docs"
+        "docs": "/docs"
     }
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy"}
+    return {"status": "ok"}
 

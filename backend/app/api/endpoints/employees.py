@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
@@ -17,12 +17,12 @@ router = APIRouter()
 
 @router.post("", response_model=EmployeeResponse, status_code=status.HTTP_201_CREATED)
 async def create_employee(
-    full_name: str,
-    cpf: str,
-    email: str,
-    phone: str = None,
-    department: str = None,
-    position: str = None,
+    full_name: str = Form(...),
+    cpf: str = Form(...),
+    email: str = Form(...),
+    phone: str = Form(None),
+    department: str = Form(None),
+    position: str = Form(None),
     face_image: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
