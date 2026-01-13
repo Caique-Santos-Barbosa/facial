@@ -10,7 +10,6 @@ from app.models.user import User
 from app.models.employee import Employee
 from app.schemas.employee import EmployeeCreate, EmployeeUpdate, EmployeeResponse
 from app.services.face_recognition_service import FaceRecognitionService
-from app.utils.face_utils import serialize_face_encoding
 from app.config import settings
 
 router = APIRouter()

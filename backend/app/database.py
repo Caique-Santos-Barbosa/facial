@@ -4,10 +4,11 @@ from sqlalchemy.orm import sessionmaker
 from app.config import settings
 
 engine = create_engine(
-    settings.database_url,
+    settings.SQLALCHEMY_DATABASE_URI,
     pool_pre_ping=True,
     pool_size=10,
-    max_overflow=20
+    max_overflow=20,
+    echo=False
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -15,6 +16,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 def get_db():
+    """Dependency para injeção de sessão do banco"""
     db = SessionLocal()
     try:
         yield db
