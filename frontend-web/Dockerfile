@@ -2,6 +2,10 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Argumentos de build (para variáveis NEXT_PUBLIC_*)
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # Copiar package files
 COPY package*.json ./
 
@@ -17,7 +21,7 @@ COPY postcss.config.js* ./
 # Copiar source code
 COPY src ./src
 
-# Build
+# Build (as variáveis NEXT_PUBLIC_* são injetadas aqui)
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
