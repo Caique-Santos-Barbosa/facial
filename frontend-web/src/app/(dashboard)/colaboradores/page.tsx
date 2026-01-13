@@ -3,25 +3,25 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { EmployeeList } from '@/components/employees/EmployeeList';
-import { api } from '@/lib/api';
+import { colaboradoresApi } from '@/lib/api';
 import { Plus } from 'lucide-react';
+import { EmployeeList } from '@/components/employees/EmployeeList';
 
 export default function ColaboradoresPage() {
   const router = useRouter();
 
   const { data: employees, isLoading } = useQuery({
     queryKey: ['employees'],
-    queryFn: async () => {
-      const response = await api.get('/employees');
-      return response.data;
-    },
+    queryFn: () => colaboradoresApi.list(),
   });
 
   return (
-    <div>
+    <div className="p-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Colaboradores</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Colaboradores</h1>
+          <p className="text-slate-500 mt-1">Gerencie os colaboradores do sistema</p>
+        </div>
         <Button onClick={() => router.push('/colaboradores/novo')}>
           <Plus className="mr-2 h-4 w-4" />
           Novo Colaborador
@@ -29,11 +29,12 @@ export default function ColaboradoresPage() {
       </div>
 
       {isLoading ? (
-        <p>Carregando...</p>
+        <div className="text-center py-12">
+          <p className="text-slate-500">Carregando colaboradores...</p>
+        </div>
       ) : (
         <EmployeeList employees={employees || []} />
       )}
     </div>
   );
 }
-

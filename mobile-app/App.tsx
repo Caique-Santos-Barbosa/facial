@@ -1,14 +1,12 @@
 import React from 'react';
-import { StatusBar } from 'expo-status-bar';
-import { AppNavigator } from './src/navigation/AppNavigator';
-import 'react-native-reanimated';
+import { StatusBar } from 'react-native';
+import FaceRecognitionScreen from './src/screens/FaceRecognitionScreen';
 
 export default function App() {
   return (
     <>
-      <StatusBar style="light" />
-      <AppNavigator />
+      <StatusBar barStyle="light-content" />
+      <FaceRecognitionScreen />
     </>
   );
 }
-

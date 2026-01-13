@@ -1,32 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  Animated,
-  Vibration,
-  Platform,
-} from 'react-native';
+import { StyleSheet, View, Text, Animated, Vibration, StatusBar } from 'react-native';
 import { Camera, useCameraDevice } from 'react-native-vision-camera';
-import { useIsFocused } from '@react-navigation/native';
-import { useFaceRecognition } from '../hooks/useFaceRecognition';
+import { recognizeFace } from '../services/api';
 import { AccessResult } from '../components/UI/AccessResult';
 import { StatusIndicator } from '../components/UI/StatusIndicator';
-import { detectFaceInImage } from '../services/faceDetection';
 
 export default function FaceRecognitionScreen() {
   const device = useCameraDevice('front');
   const cameraRef = useRef<Camera>(null);
-  const isFocused = useIsFocused();
-  const { recognize, processing, result, reset } = useFaceRecognition();
 
-  const [systemActive, setSystemActive] = useState(true);
-  const [faceDetected, setFaceDetected] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
+  const [systemActive, setSystemActive] = useState(true);
+  const [recognitionResult, setRecognitionResult] = useState<any>(null);
+  const [processing, setProcessing] = useState(false);
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Solicita permissão de câmera
+  // Request camera permission
   useEffect(() => {
     (async () => {
       const status = await Camera.requestCameraPermission();
@@ -34,7 +24,7 @@ export default function FaceRecognitionScreen() {
     })();
   }, []);
 
-  // Animação de pulso para o círculo de detecção
+  // Pulse animation
   useEffect(() => {
     const pulse = Animated.loop(
       Animated.sequence([
@@ -54,35 +44,21 @@ export default function FaceRecognitionScreen() {
     return () => pulse.stop();
   }, []);
 
-  // Simula detecção de face (pode ser melhorado com ML Kit em tempo real)
+  // Auto capture every 3 seconds
   useEffect(() => {
-    if (!processing && !result && systemActive && isActive) {
-      // Por enquanto, detecta face após 2 segundos
-      // Em produção, use ML Kit para detecção em tempo real
-      const timeout = setTimeout(() => {
-        setFaceDetected(true);
-      }, 2000);
+    if (!systemActive || recognitionResult || processing) return;
 
-      return () => clearTimeout(timeout);
-    }
-  }, [processing, result, systemActive, isActive]);
+    const interval = setInterval(() => {
+      captureAndRecognize();
+    }, 3000);
 
-  // Captura e processa foto quando face é detectada
-  useEffect(() => {
-    let timeout: NodeJS.Timeout;
-
-    if (faceDetected && !processing && !result && systemActive) {
-      // Aguarda 1 segundo com face estável antes de capturar
-      timeout = setTimeout(() => {
-        captureAndRecognize();
-      }, 1000);
-    }
-
-    return () => clearTimeout(timeout);
-  }, [faceDetected, processing, result, systemActive]);
+    return () => clearInterval(interval);
+  }, [systemActive, recognitionResult, processing]);
 
   const captureAndRecognize = async () => {
-    if (!cameraRef.current || processing) return;
+    if (!cameraRef.current || processing || recognitionResult) return;
+
+    setProcessing(true);
 
     try {
       const photo = await cameraRef.current.takePhoto({
@@ -90,34 +66,36 @@ export default function FaceRecognitionScreen() {
         flash: 'off',
       });
 
-      const imagePath = `file://${photo.path}`;
+      const formData = new FormData();
+      formData.append('image', {
+        uri: `file://${photo.path}`,
+        type: 'image/jpeg',
+        name: 'face.jpg',
+      } as any);
 
-      // Verifica se há face na imagem
-      const faceCheck = await detectFaceInImage(imagePath);
-      
-      if (!faceCheck.hasFace) {
-        setFaceDetected(false);
-        return;
-      }
+      const result = await recognizeFace(formData);
 
-      // Envia para API
-      const recognitionResult = await recognize(imagePath);
-
-      // Vibra baseado no resultado
-      if (recognitionResult.access_granted) {
-        Vibration.vibrate([0, 200, 100, 200]); // Sucesso
+      // Vibration feedback
+      if (result.access_granted) {
+        Vibration.vibrate([0, 200, 100, 200]); // Success pattern
       } else {
-        Vibration.vibrate(500); // Erro
+        Vibration.vibrate(500); // Error
       }
 
-      setFaceDetected(false);
+      setRecognitionResult(result);
+
+      // Reset after 5 seconds
+      setTimeout(() => {
+        setRecognitionResult(null);
+        setProcessing(false);
+      }, 5000);
+
     } catch (error) {
       console.error('Recognition error:', error);
-      setFaceDetected(false);
+      setProcessing(false);
     }
   };
 
-  // Obtém saudação baseada na hora
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 12) return 'Bom dia';
@@ -125,100 +103,94 @@ export default function FaceRecognitionScreen() {
     return 'Boa noite';
   };
 
-  // Formata data
   const formatDate = () => {
-    const now = new Date();
-    return now.toLocaleDateString('pt-BR', {
+    return new Date().toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
     });
   };
 
-  if (!device || !hasPermission) {
+  const formatTime = () => {
+    return new Date().toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  if (!hasPermission) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>
-          {!hasPermission ? 'Permissão de câmera necessária' : 'Câmera não disponível'}
-        </Text>
+        <Text style={styles.errorText}>Permissão de câmera negada</Text>
       </View>
     );
   }
 
-  const isActive = systemActive && isFocused && !result;
+  if (!device) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Câmera não disponível</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {/* Câmera */}
+      <StatusBar barStyle="light-content" />
+      
+      {/* Camera */}
       <Camera
         ref={cameraRef}
         style={StyleSheet.absoluteFill}
         device={device}
-        isActive={isActive}
+        isActive={systemActive && !recognitionResult}
         photo={true}
-        onError={(error) => console.error('Camera error:', error)}
       />
 
       {/* Overlay */}
       <View style={styles.overlay}>
-        {/* Indicador de sistema ativo */}
+        {/* Status Indicator */}
         <StatusIndicator active={systemActive} text="Sistema ativo" />
 
-        {/* Círculo de detecção central */}
+        {/* Center Detection Circle */}
         <View style={styles.centerContainer}>
           <Animated.View
             style={[
               styles.detectionCircle,
               {
-                borderColor: faceDetected ? '#10b981' : '#6366f1',
-                transform: [{ scale: faceDetected ? 1 : pulseAnim }],
+                borderColor: processing ? '#10b981' : '#6366f1',
+                transform: [{ scale: processing ? 1 : pulseAnim }],
               },
             ]}
           >
-            {/* Overlay da câmera na área circular */}
-            <View style={styles.cameraCircle} />
+            {processing && (
+              <View style={styles.faceDetectedBadge}>
+                <Text style={styles.badgeText}>✓ Rosto detectado</Text>
+              </View>
+            )}
           </Animated.View>
-
-          {/* Indicador de rosto detectado */}
-          {faceDetected && (
-            <View style={styles.faceDetectedBadge}>
-              <Text style={styles.faceDetectedText}>✓ Rosto detectado</Text>
-            </View>
-          )}
-
-          {/* Indicador de processamento */}
-          {processing && (
-            <View style={styles.processingBadge}>
-              <Text style={styles.processingText}>Processando...</Text>
-            </View>
-          )}
         </View>
 
-        {/* Resultado do reconhecimento */}
-        {result && (
+        {/* Recognition Result */}
+        {recognitionResult && (
           <AccessResult
-            granted={result.access_granted}
-            employeeName={result.employee?.name}
-            message={result.message}
+            granted={recognitionResult.access_granted}
+            employeeName={recognitionResult.employee?.name}
+            message={recognitionResult.message}
             greeting={getGreeting()}
           />
         )}
 
-        {/* Informações na parte inferior */}
+        {/* Bottom Info */}
         <View style={styles.bottomInfo}>
-          <Text style={styles.timeText}>
-            {new Date().toLocaleTimeString('pt-BR', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </Text>
+          <Text style={styles.timeText}>{formatTime()}</Text>
           <Text style={styles.dateText}>{formatDate()}</Text>
         </View>
 
-        {/* Rodapé */}
+        {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            © 2025 HDT Energy | Sistema de Reconhecimento Facial
+            © 2026 HDT Energy | Sistema de Reconhecimento Facial
           </Text>
         </View>
       </View>
@@ -245,37 +217,17 @@ const styles = StyleSheet.create({
     height: 300,
     borderRadius: 150,
     borderWidth: 4,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    overflow: 'hidden',
-  },
-  cameraCircle: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 150,
+    paddingBottom: 20,
   },
   faceDetectedBadge: {
-    position: 'absolute',
-    bottom: -40,
     backgroundColor: 'rgba(16, 185, 129, 0.9)',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
   },
-  faceDetectedText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  processingBadge: {
-    position: 'absolute',
-    top: -40,
-    backgroundColor: 'rgba(99, 102, 241, 0.9)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  processingText: {
+  badgeText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
@@ -310,7 +262,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     textAlign: 'center',
-    marginTop: '50%',
   },
 });
-

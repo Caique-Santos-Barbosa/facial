@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, Animated } from 'react-native';
 
 interface AccessResultProps {
@@ -9,22 +9,34 @@ interface AccessResultProps {
 }
 
 export function AccessResult({ granted, employeeName, message, greeting }: AccessResultProps) {
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
-  React.useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, []);
 
   return (
     <Animated.View
       style={[
         styles.container,
-        { opacity: fadeAnim },
         granted ? styles.success : styles.denied,
+        {
+          opacity: fadeAnim,
+          transform: [{ scale: scaleAnim }],
+        },
       ]}
     >
       <View style={styles.iconContainer}>
@@ -51,12 +63,17 @@ export function AccessResult({ granted, employeeName, message, greeting }: Acces
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: '40%',
+    top: '35%',
     alignSelf: 'center',
     padding: 24,
-    borderRadius: 16,
+    borderRadius: 20,
     minWidth: 300,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   success: {
     backgroundColor: 'rgba(16, 185, 129, 0.95)',
@@ -65,16 +82,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(239, 68, 68, 0.95)',
   },
   iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
   icon: {
-    fontSize: 32,
+    fontSize: 36,
     color: '#fff',
     fontWeight: 'bold',
   },
@@ -86,7 +103,7 @@ const styles = StyleSheet.create({
   },
   greetingText: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
   },
@@ -97,4 +114,3 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 });
-

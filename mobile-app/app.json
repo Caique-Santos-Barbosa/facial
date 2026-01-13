@@ -15,7 +15,7 @@
       [
         "react-native-vision-camera",
         {
-          "cameraPermissionText": "$(PRODUCT_NAME) precisa acessar sua câmera para reconhecimento facial.",
+          "cameraPermissionText": "HDT Energy precisa acessar sua câmera para reconhecimento facial.",
           "enableMicrophonePermission": false
         }
       ]
@@ -31,4 +31,3 @@
     }
   }
 }
-
