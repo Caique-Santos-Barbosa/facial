@@ -1,24 +1,35 @@
 FROM node:18-alpine AS base
 
-# Instalar dependências
+# Dependências apenas
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-COPY package*.json ./
+# Copiar APENAS package.json e package-lock.json
+COPY package.json package-lock.json* ./
 RUN npm ci
 
-# Build
+# Builder
 FROM base AS builder
 WORKDIR /app
+
+# Copiar node_modules do estágio anterior
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
 
+# Copiar APENAS arquivos do frontend
+COPY package.json package-lock.json* ./
+COPY next.config.js ./
+COPY tsconfig.json ./
+COPY tailwind.config.ts ./
+COPY postcss.config.js ./
+COPY public ./public
+COPY src ./src
+
+# Build do Next.js
 ENV NEXT_TELEMETRY_DISABLED 1
-
 RUN npm run build
 
-# Produção
+# Runner (produção)
 FROM base AS runner
 WORKDIR /app
 
@@ -28,6 +39,7 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Copiar arquivos necessários
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
