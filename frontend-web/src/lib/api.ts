@@ -1,8 +1,9 @@
 import axios from 'axios';
 
-// Valor padrão hardcoded como fallback
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
-  'https://hdt-energy-facial.mqtl34.easypanel.host/api/v1';
+// 🔥 HARDCODE FORÇADO - SEMPRE HTTPS
+const API_BASE_URL = 'https://hdt-energy-facial.mqtl34.easypanel.host/api/v1';
+
+console.log('🚀 API configurada:', API_BASE_URL);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -10,11 +11,6 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
-
-// Debug: Verificar URL em desenvolvimento
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  console.log('API Base URL:', API_BASE_URL);
-}
 
 // Interceptor para adicionar token
 api.interceptors.request.use((config) => {
