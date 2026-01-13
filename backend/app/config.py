@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
-from typing import Optional, List
+from typing import Optional, List, Union
+import json
 
 class Settings(BaseSettings):
     # API Configuration
@@ -49,12 +50,23 @@ class Settings(BaseSettings):
     FACES_DIR: str = "uploads/faces"
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
     
-    # CORS
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:19006"]
+    # CORS - Aceita tanto lista quanto string JSON
+    BACKEND_CORS_ORIGINS: Union[List[str], str] = ["http://localhost:3000", "http://localhost:19006"]
+    
+    @property
+    def CORS_ORIGINS_LIST(self) -> List[str]:
+        """Parse CORS origins, accepting both list and JSON string"""
+        if isinstance(self.BACKEND_CORS_ORIGINS, str):
+            try:
+                # Tenta fazer parse de JSON string
+                return json.loads(self.BACKEND_CORS_ORIGINS)
+            except json.JSONDecodeError:
+                # Se falhar, retorna como lista com único elemento
+                return [self.BACKEND_CORS_ORIGINS]
+        return self.BACKEND_CORS_ORIGINS
     
     class Config:
         env_file = ".env"
         case_sensitive = True
 
 settings = Settings()
-
