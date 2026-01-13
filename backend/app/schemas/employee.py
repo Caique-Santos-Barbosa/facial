@@ -1,3 +1,7 @@
+"""
+Schemas para colaboradores
+"""
+
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from typing import Optional
@@ -23,14 +27,24 @@ class EmployeeUpdate(BaseModel):
 
 class EmployeeResponse(EmployeeBase):
     id: int
-    face_registered_at: datetime
     is_active: bool
+    face_image_path: str
+    face_registered_at: datetime
     created_at: datetime
     updated_at: datetime
     
     class Config:
         from_attributes = True
 
-class Employee(EmployeeResponse):
-    pass
-
+class EmployeeListResponse(BaseModel):
+    id: int
+    full_name: str
+    cpf: str
+    email: str
+    department: Optional[str]
+    position: Optional[str]
+    is_active: bool
+    face_registered_at: datetime
+    
+    class Config:
+        from_attributes = True

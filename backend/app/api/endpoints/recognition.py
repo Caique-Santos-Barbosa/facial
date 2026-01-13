@@ -1,13 +1,19 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, BackgroundTasks
+"""
+Endpoint de reconhecimento facial
+"""
+
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, BackgroundTasks, Form
 from sqlalchemy.orm import Session
-from datetime import datetime
+from typing import Optional
 import os
 import uuid
+from datetime import datetime
+
 from app.database import get_db
-from app.models.employee import Employee, AccessLog
 from app.services.face_recognition_service import FaceRecognitionService
 from app.services.liveness_detection_service import LivenessDetectionService
 from app.services.door_control_service import DoorControlService
+from app.models.employee import Employee, AccessLog
 from app.config import settings
 
 router = APIRouter()
@@ -15,28 +21,24 @@ router = APIRouter()
 @router.post("/recognize")
 async def recognize_face(
     image: UploadFile = File(...),
-    device_id: str = None,
+    device_id: Optional[str] = Form(None),
     background_tasks: BackgroundTasks = None,
     db: Session = Depends(get_db)
 ):
     """
     Endpoint principal de reconhecimento facial
-    Usado pelo app mobile
+    Usado pelo app mobile para validar acesso
     """
     
-    # Salva imagem temporariamente
     temp_image_path = f"/tmp/{uuid.uuid4()}.jpg"
     
     try:
-        # Cria diretório /tmp se não existir
-        os.makedirs("/tmp", exist_ok=True)
-        
         # Salva arquivo enviado
         with open(temp_image_path, "wb") as buffer:
             content = await image.read()
             buffer.write(content)
         
-        # 1. Liveness Detection
+        # 1. LIVENESS DETECTION
         liveness_result = None
         if settings.LIVENESS_ENABLED:
             liveness_result = LivenessDetectionService.check_liveness(temp_image_path)
@@ -61,34 +63,41 @@ async def recognize_face(
                     "liveness_details": liveness_result
                 }
         
-        # 2. Busca todos os colaboradores ativos
+        # 2. BUSCA COLABORADORES ATIVOS
         employees = db.query(Employee).filter(Employee.is_active == True).all()
         
         if not employees:
-            raise HTTPException(status_code=404, detail="Nenhum colaborador cadastrado")
+            raise HTTPException(
+                status_code=404,
+                detail="Nenhum colaborador cadastrado no sistema"
+            )
         
-        # 3. Compara com cada colaborador
+        # 3. COMPARA COM CADA COLABORADOR
         best_match = None
         best_confidence = 0.0
         
         for employee in employees:
-            match, confidence = FaceRecognitionService.compare_faces(
-                employee.face_encoding,
-                temp_image_path
-            )
-            
-            if match and confidence > best_confidence:
-                best_match = employee
-                best_confidence = confidence
+            try:
+                match, confidence = FaceRecognitionService.compare_faces(
+                    employee.face_encoding,
+                    temp_image_path
+                )
+                
+                if match and confidence > best_confidence:
+                    best_match = employee
+                    best_confidence = confidence
+            except Exception as e:
+                print(f"Erro ao comparar com colaborador {employee.id}: {str(e)}")
+                continue
         
-        # 4. Processa resultado
+        # 4. PROCESSA RESULTADO
         if best_match and best_confidence >= settings.FACE_RECOGNITION_TOLERANCE:
-            # Acesso concedido
+            # ACESSO CONCEDIDO
             access_log = AccessLog(
                 employee_id=best_match.id,
                 access_granted=True,
                 confidence_score=best_confidence,
-                liveness_passed=liveness_result["is_live"] if liveness_result else None,
+                liveness_passed=liveness_result.get("is_live") if liveness_result else None,
                 device_id=device_id,
                 attempted_at=datetime.utcnow()
             )
@@ -96,10 +105,17 @@ async def recognize_face(
             db.commit()
             
             # Abre porta em background
-            door_service = DoorControlService()
-            background_tasks.add_task(door_service.open_door, 1)
+            def open_door_task():
+                try:
+                    door_service = DoorControlService()
+                    door_service.open_door(1)
+                except Exception as e:
+                    print(f"Erro ao abrir porta: {str(e)}")
             
-            # Determina saudação baseado na hora
+            if background_tasks:
+                background_tasks.add_task(open_door_task)
+            
+            # Saudação baseada na hora
             hour = datetime.now().hour
             if 5 <= hour < 12:
                 greeting = "Bom dia"
@@ -122,12 +138,12 @@ async def recognize_face(
                 "timestamp": datetime.now().isoformat()
             }
         else:
-            # Acesso negado
+            # ACESSO NEGADO
             access_log = AccessLog(
                 employee_id=None,
                 access_granted=False,
                 confidence_score=best_confidence if best_match else 0.0,
-                liveness_passed=liveness_result["is_live"] if liveness_result else None,
+                liveness_passed=liveness_result.get("is_live") if liveness_result else None,
                 denial_reason="Face não reconhecida ou confiança insuficiente",
                 device_id=device_id,
                 attempted_at=datetime.utcnow()
@@ -139,9 +155,16 @@ async def recognize_face(
                 "success": False,
                 "access_granted": False,
                 "message": "Face não reconhecida. Acesso negado.",
-                "confidence": round(best_confidence, 2) if best_match else 0.0
+                "confidence": round(best_confidence, 2) if best_match else 0.0,
+                "timestamp": datetime.now().isoformat()
             }
     
+    except Exception as e:
+        print(f"Erro no reconhecimento facial: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao processar reconhecimento: {str(e)}"
+        )
     finally:
         # Limpa arquivo temporário
         if os.path.exists(temp_image_path):
@@ -149,4 +172,3 @@ async def recognize_face(
                 os.remove(temp_image_path)
             except:
                 pass
-

@@ -29,3 +29,6 @@ def decode_access_token(token: str) -> Optional[dict]:
     except JWTError:
         return None
 
+def verify_token(token: str) -> Optional[dict]:
+    """Alias para decode_access_token para compatibilidade"""
+    return decode_access_token(token)

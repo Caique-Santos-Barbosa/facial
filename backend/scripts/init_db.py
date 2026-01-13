@@ -1,12 +1,6 @@
 """
-Script para inicializar o banco de dados e criar usuário admin
-Execute: python -m scripts.init_db
+Script para inicializar banco de dados e criar usuário admin
 """
-import sys
-from pathlib import Path
-
-# Adiciona o diretório raiz ao path
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy.orm import Session
 from app.database import SessionLocal, engine, Base
@@ -14,13 +8,15 @@ from app.models.user import User
 from app.core.security import get_password_hash
 
 def init_db():
-    """Cria as tabelas e um usuário admin padrão"""
-    # Cria todas as tabelas
+    """Inicializa banco de dados"""
+    # Cria tabelas
     Base.metadata.create_all(bind=engine)
     
-    db: Session = SessionLocal()
+    # Cria sessão
+    db = SessionLocal()
+    
     try:
-        # Verifica se já existe um admin
+        # Verifica se já existe admin
         admin = db.query(User).filter(User.username == "admin").first()
         
         if not admin:
@@ -28,25 +24,24 @@ def init_db():
             admin = User(
                 username="admin",
                 email="admin@hdtenergy.com",
-                hashed_password=get_password_hash("admin123"),
+                hashed_password=get_password_hash("admin123"),  # MUDAR EM PRODUÇÃO!
                 full_name="Administrador",
-                is_active=True,
-                is_superuser=True
+                is_superuser=True,
+                is_active=True
             )
             db.add(admin)
             db.commit()
             print("✅ Usuário admin criado com sucesso!")
-            print("   Usuário: admin")
-            print("   Senha: admin123")
-            print("   ⚠️  ALTERE A SENHA APÓS O PRIMEIRO LOGIN!")
+            print("   Username: admin")
+            print("   Password: admin123")
+            print("   ⚠️  IMPORTANTE: Altere a senha em produção!")
         else:
             print("ℹ️  Usuário admin já existe")
-    except Exception as e:
-        print(f"❌ Erro ao inicializar banco: {e}")
-        db.rollback()
+    
     finally:
         db.close()
 
 if __name__ == "__main__":
+    print("🚀 Iniciando banco de dados...")
     init_db()
-
+    print("✅ Banco de dados inicializado!")
