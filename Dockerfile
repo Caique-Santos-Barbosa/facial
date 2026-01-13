@@ -18,13 +18,15 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY requirements.txt .
+# Copia requirements do backend
+COPY backend/requirements.txt .
 
 # Instalação das dependências Python
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copia aplicação do backend
+COPY backend/ .
 
 # Cria diretórios necessários
 RUN mkdir -p uploads/faces /tmp
