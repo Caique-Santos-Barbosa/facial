@@ -2,7 +2,7 @@
 Schemas do sistema - exportação centralizada
 """
 
-# Auth schemas
+# Auth schemas (principal)
 from app.schemas.auth import (
     Token,
     TokenData,
@@ -10,6 +10,18 @@ from app.schemas.auth import (
     UserCreate,
     UserResponse
 )
+
+# User schemas (compatibilidade - pode ser removido se não usado)
+try:
+    from app.schemas.user import (
+        UserBase as UserBaseLegacy,
+        User as UserLegacy,
+        Token as TokenLegacy
+    )
+except ImportError:
+    UserBaseLegacy = None
+    UserLegacy = None
+    TokenLegacy = None
 
 # Employee schemas
 from app.schemas.employee import (
@@ -28,7 +40,7 @@ from app.schemas.access_log import (
 )
 
 __all__ = [
-    # Auth
+    # Auth (principal)
     "Token",
     "TokenData",
     "UserLogin",
