@@ -59,10 +59,14 @@ class Settings(BaseSettings):
         if isinstance(self.BACKEND_CORS_ORIGINS, str):
             try:
                 # Tenta fazer parse de JSON string
-                return json.loads(self.BACKEND_CORS_ORIGINS)
+                parsed = json.loads(self.BACKEND_CORS_ORIGINS)
+                print(f"✅ CORS parsed from JSON: {parsed}")
+                return parsed
             except json.JSONDecodeError:
                 # Se falhar, retorna como lista com único elemento
+                print(f"⚠️ CORS as single string: {self.BACKEND_CORS_ORIGINS}")
                 return [self.BACKEND_CORS_ORIGINS]
+        print(f"✅ CORS as list: {self.BACKEND_CORS_ORIGINS}")
         return self.BACKEND_CORS_ORIGINS
     
     class Config:
@@ -70,3 +74,6 @@ class Settings(BaseSettings):
         case_sensitive = True
 
 settings = Settings()
+
+# Log das configurações de CORS no startup
+print(f"🔒 CORS Origins configurados: {settings.CORS_ORIGINS_LIST}")
