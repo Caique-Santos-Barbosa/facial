@@ -8,7 +8,7 @@ export default function LogsAcessoPage() {
   const { data: logs, isLoading } = useQuery({
     queryKey: ['access-logs'],
     queryFn: async () => {
-      const response = await api.get('/access/logs?limit=100');
+      const response = await api.get('/access-logs?limit=100');
       return response.data;
     },
   });

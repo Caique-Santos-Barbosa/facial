@@ -26,7 +26,7 @@ const menuItems = [
   },
   {
     title: 'Logs de Acesso',
-    href: '/logs',
+    href: '/logs-acesso',
     icon: ClipboardList,
   },
   {
