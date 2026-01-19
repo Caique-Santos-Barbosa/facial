@@ -50,7 +50,7 @@ export const authApi = {
 
 export const colaboradoresApi = {
   list: async (params?: { search?: string; active_only?: boolean }) => {
-    const response = await api.get('/employees', { params });
+    const response = await api.get('/employees/', { params });
     return response.data;
   },
   
@@ -60,7 +60,7 @@ export const colaboradoresApi = {
   },
   
   create: async (formData: FormData) => {
-    const response = await api.post('/employees', formData, {
+    const response = await api.post('/employees/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
@@ -85,7 +85,7 @@ export const logsApi = {
     date_to?: string;
     granted_only?: boolean;
   }) => {
-    const response = await api.get('/access-logs', { params });
+    const response = await api.get('/access-logs/', { params });
     return response.data;
   },
   
