@@ -25,7 +25,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    const status = error.response?.status;
+    const requestUrl = error.config?.url || '';
+    const isAuthError = status === 401 || status === 403;
+    const isLoginEndpoint = requestUrl.includes('/auth/login');
+
+    if (isAuthError && !isLoginEndpoint) {
       console.warn('🔒 Sessão inválida ou expirada, redirecionando para login...');
       localStorage.removeItem('access_token');
       if (window.location.pathname !== '/login') {
