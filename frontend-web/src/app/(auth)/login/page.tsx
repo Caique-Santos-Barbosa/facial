@@ -37,12 +37,14 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const response = await authApi.login(data.username, data.password);
+      localStorage.setItem('access_token', response.access_token);
       const userData = await authApi.me();
       
       setAuth(userData, response.access_token);
       toast.success('Login realizado com sucesso!');
       router.push('/dashboard');
     } catch (error: any) {
+      localStorage.removeItem('access_token');
       toast.error(error.response?.data?.detail || 'Erro ao fazer login');
     } finally {
       setLoading(false);
